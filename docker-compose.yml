@@ -1,0 +1,47 @@
+version: '2'
+
+services:
+   mysql:
+     build: ./mysql
+     ports:
+      - '33062:3306'
+     restart: always
+     volumes:
+       - mysql_data:/var/lib/mysql
+     environment:
+       MYSQL_ROOT_PASSWORD: root
+   postgres:
+     build: ./postgres
+     ports:
+       - '54322:5432'
+     restart: always
+     volumes:
+      # Mount the DB dumps folder into the container, to be able to create & access database dumps:
+      - ./postgres/db/dumps:/db/dumps
+      # Mount out tmp folder, we might want to have access to something there during development:
+      - ./postgres/tmp:/tmp
+      # Mount our 'restoredb' script:
+      - ./postgres/bin/restoredb:/bin/restoredb:ro
+      # Mount our 'dumpdb' script:
+      - ./postgres/bin/dumpdb:/bin/dumpdb:ro
+      # We'll mount the 'postgres-data' volume into the location Postgres stores it's data:
+      - postgres-data:/var/lib/postgresql/data
+     environment:
+        POSTGRES_PASSWORD: 123456
+   php:
+    build: ./php
+    ports:
+      - '8000:80'
+    restart: always
+    volumes:
+       - /var/log/apache2/error.log:/var/log/apache2/error.log
+       - /var/log/apache2/access.log:/var/log/apache2/access.log
+       - /home/helder/www/:/var/www/html
+    depends_on:
+      - mysql
+      - postgres
+volumes:
+    mysql_data:
+       driver: local
+    postgres-data:
+       driver: local
